@@ -2,6 +2,7 @@ package com.foldermania.ui;
 
 import com.foldermania.AppInfo;
 import com.foldermania.icon.FolderIconRenderer;
+import com.foldermania.icon.OverlayImageLoader;
 import com.foldermania.service.CleanupService;
 import com.foldermania.service.FolderService;
 import com.foldermania.service.StyleStore;
@@ -42,7 +43,6 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.nio.file.Files;
@@ -273,19 +273,17 @@ public class MainApp extends Application {
 
     private void chooseOverlay() {
         FileChooser chooser = new FileChooser();
-        chooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.jpeg", "*.gif"));
+        chooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("Images (SVG, PNG, JPG, GIF)",
+                        "*.svg", "*.png", "*.jpg", "*.jpeg", "*.gif"),
+                new FileChooser.ExtensionFilter("SVG", "*.svg"),
+                new FileChooser.ExtensionFilter("All files", "*.*"));
         File file = chooser.showOpenDialog(stage);
         if (file == null) {
             return;
         }
         try {
-            BufferedImage img = ImageIO.read(file);
-            if (img == null) {
-                status.setText("Unsupported image format.");
-                return;
-            }
-            overlay = img;
+            overlay = OverlayImageLoader.load(file.toPath());
             updatePreview();
         } catch (Exception ex) {
             status.setText("Cannot read image: " + ex.getMessage());
