@@ -47,6 +47,10 @@ Run these on Windows: the JavaFX jars that get bundled are specific to the curre
 
 Use `gradlew packageInstaller -PinstallerType=msi` to get an `.msi` instead of an `.exe`.
 
+Shortcut: `.\build-installer.ps1` (or `-Msi`) finds WiX automatically and builds the installer.
+
+GitHub Actions builds the installer on every push (download it from the run's artifacts). Push a tag like `v0.1.0` to attach it to a GitHub release.
+
 > **Tip:** if the project lives inside a OneDrive folder, the build directory is automatically moved to `%LOCALAPPDATA%\FolderMania-build` to avoid sync locks. The output paths above change accordingly.
 
 ## Usage
