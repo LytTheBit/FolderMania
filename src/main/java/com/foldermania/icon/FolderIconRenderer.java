@@ -3,6 +3,7 @@ package com.foldermania.icon;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Area;
+import java.awt.geom.Path2D;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -30,21 +31,38 @@ public final class FolderIconRenderer {
         g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
         g.transform(AffineTransform.getScaleInstance(size / BASE, size / BASE));
 
-        // Back panel = body + tab
-        Area back = new Area(new RoundRectangle2D.Double(20, 60, 216, 150, 20, 20));
-        back.add(new Area(new RoundRectangle2D.Double(20, 36, 92, 50, 16, 16)));
-        g.setColor(shade(base, 0.78f));
+        // Soft drop shadow under the whole folder (a few translucent layers fake a blur)
+        for (int i = 3; i >= 1; i--) {
+            g.setColor(new Color(0, 0, 0, 10));
+            g.fill(new RoundRectangle2D.Double(20 - i, 84 + i * 1.5, 216 + 2 * i, 132 + i, 22, 22));
+        }
+
+        // Back panel = body + tab with the sloped edge Windows 11 uses
+        Path2D.Double tab = new Path2D.Double();
+        tab.moveTo(20, 100);
+        tab.lineTo(20, 60);
+        tab.quadTo(20, 42, 38, 42);
+        tab.lineTo(88, 42);
+        tab.curveTo(99, 42, 105, 48, 111, 58);
+        tab.lineTo(116, 66);
+        tab.lineTo(116, 100);
+        tab.closePath();
+        Area back = new Area(new RoundRectangle2D.Double(20, 62, 216, 148, 20, 20));
+        back.add(new Area(tab));
+        g.setColor(backColor(base));
         g.fill(back);
 
-        // Front panel with a vertical gradient
-        RoundRectangle2D front = new RoundRectangle2D.Double(20, 84, 216, 132, 20, 20);
-        g.setPaint(new GradientPaint(0, 84, shade(base, 1.08f), 0, 216, base));
+        // Front panel: lighter at the top, the base color at the bottom
+        RoundRectangle2D front = new RoundRectangle2D.Double(20, 80, 216, 136, 20, 20);
+        // Dark colors get a gentler gradient, otherwise a black folder would fade to grey
+        float lift = 0.12f + 0.26f * brightness(base);
+        g.setPaint(new GradientPaint(0, 80, mix(base, Color.WHITE, lift), 0, 216, base));
         g.fill(front);
 
         // Soft highlight on the top edge of the front panel
-        g.setColor(new Color(255, 255, 255, 90));
+        g.setColor(new Color(255, 255, 255, 110));
         g.setStroke(new BasicStroke(2f));
-        g.drawLine(34, 86, 222, 86);
+        g.drawLine(36, 82, 220, 82);
 
         // Overlay icon centered on the front panel
         if (overlay != null) {
@@ -53,7 +71,7 @@ public final class FolderIconRenderer {
             double w = ratio >= 1 ? box : box * ratio;
             double h = ratio >= 1 ? box / ratio : box;
             double x = 128 - w / 2;
-            double y = 150 - h / 2;
+            double y = 148 - h / 2;
             g.drawImage(overlay, (int) Math.round(x), (int) Math.round(y),
                     (int) Math.round(w), (int) Math.round(h), null);
         }
@@ -71,9 +89,23 @@ public final class FolderIconRenderer {
         IcoWriter.write(out, images);
     }
 
-    /** Multiplies the HSB brightness by the given factor (clamped to 1). */
-    private static Color shade(Color c, float factor) {
+    /** The back panel: same hue as the base, a bit deeper and more saturated, like the Windows folder. */
+    private static Color backColor(Color c) {
         float[] hsb = Color.RGBtoHSB(c.getRed(), c.getGreen(), c.getBlue(), null);
-        return Color.getHSBColor(hsb[0], hsb[1], Math.min(1f, hsb[2] * factor));
+        // Near-grey colors (white, grey, black) have no saturation to boost: only darken them
+        float sat = hsb[1] < 0.08f ? hsb[1] : Math.min(1f, hsb[1] * 1.18f);
+        return Color.getHSBColor(hsb[0], sat, hsb[2] * 0.88f);
+    }
+
+    private static float brightness(Color c) {
+        return Color.RGBtoHSB(c.getRed(), c.getGreen(), c.getBlue(), null)[2];
+    }
+
+    /** Linear blend of two colors: t = 0 gives a, t = 1 gives b. */
+    private static Color mix(Color a, Color b, float t) {
+        return new Color(
+                Math.round(a.getRed() + (b.getRed() - a.getRed()) * t),
+                Math.round(a.getGreen() + (b.getGreen() - a.getGreen()) * t),
+                Math.round(a.getBlue() + (b.getBlue() - a.getBlue()) * t));
     }
 }

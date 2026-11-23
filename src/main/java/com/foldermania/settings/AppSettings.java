@@ -14,11 +14,6 @@ import java.util.stream.Stream;
 /** Persistent user settings stored in %APPDATA%\FolderMania. */
 public final class AppSettings {
 
-    /** Color presets; the first one is the default folder color. */
-    public static final List<String> PRESETS = List.of(
-            "#FFC83D", "#E5484D", "#F76B15", "#30A46C", "#12A594",
-            "#3B82F6", "#8E4EC6", "#E93D82", "#8B8D98", "#AD7F58");
-
     private static final int MAX_RECENT = 8;
 
     private final Path dir;

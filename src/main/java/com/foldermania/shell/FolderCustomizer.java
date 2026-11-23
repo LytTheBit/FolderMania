@@ -6,14 +6,18 @@ import com.sun.jna.Pointer;
 import com.sun.jna.WString;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+/** Applies and removes a folder icon through desktop.ini, touching nothing but the IconResource key. */
 public final class FolderCustomizer {
 
     private static final int SHCNE_UPDATEITEM = 0x00002000;
     private static final int SHCNF_PATHW = 0x0005;
+
+    private static final String INI_NAME = "desktop.ini";
+    private static final String SECTION = ".ShellClassInfo";
+    private static final String ICON_KEY = "IconResource";
 
     private interface Shell32 extends Library {
         Shell32 INSTANCE = Native.load("shell32", Shell32.class);
@@ -23,14 +27,19 @@ public final class FolderCustomizer {
 
     private FolderCustomizer() {}
 
-    /** Applies a custom icon to a folder via desktop.ini. */
+    /**
+     * Applies a custom icon to a folder. An existing desktop.ini is updated in place: only
+     * IconResource is written, so keys such as LocalizedResourceName or InfoTip survive.
+     */
     public static void applyIcon(Path folder, Path iconFile) throws IOException {
-        Path ini = folder.resolve("desktop.ini");
+        Path ini = folder.resolve(INI_NAME);
 
-        // An existing desktop.ini is hidden+system, so clear attributes before overwriting
+        DesktopIni content;
         if (Files.exists(ini)) {
-            Files.setAttribute(ini, "dos:hidden", false);
-            Files.setAttribute(ini, "dos:system", false);
+            makeWritable(ini);
+            content = DesktopIni.read(ini);
+        } else {
+            content = DesktopIni.empty();
         }
 
         // Use a relative reference when the icon lives inside the folder,
@@ -41,16 +50,8 @@ public final class FolderCustomizer {
                 ? absIcon.getFileName().toString()
                 : absIcon.toString();
 
-        String content = "[.ShellClassInfo]\r\n"
-                + "IconResource=" + iconRef + ",0\r\n";
-
-        // UTF-16 LE with BOM so non-ASCII paths work correctly
-        byte[] bom = {(byte) 0xFF, (byte) 0xFE};
-        byte[] body = content.getBytes(StandardCharsets.UTF_16LE);
-        byte[] data = new byte[bom.length + body.length];
-        System.arraycopy(bom, 0, data, 0, bom.length);
-        System.arraycopy(body, 0, data, bom.length, body.length);
-        Files.write(ini, data);
+        content.set(SECTION, ICON_KEY, iconRef + ",0");
+        content.write(ini);
 
         Files.setAttribute(ini, "dos:hidden", true);
         Files.setAttribute(ini, "dos:system", true);
@@ -60,15 +61,35 @@ public final class FolderCustomizer {
         refresh(folder);
     }
 
-    /** Removes the customization and restores the default icon. */
+    /**
+     * Removes the custom icon and restores the default one. desktop.ini is deleted only if
+     * nothing else is left in it; otherwise the other keys are kept and the folder stays read-only,
+     * because Explorer needs that flag to keep reading them.
+     */
     public static void reset(Path folder) throws IOException {
-        Path ini = folder.resolve("desktop.ini");
+        Path ini = folder.resolve(INI_NAME);
+        boolean iniRemains = false;
+
         if (Files.exists(ini)) {
-            Files.setAttribute(ini, "dos:hidden", false);
-            Files.setAttribute(ini, "dos:system", false);
-            Files.delete(ini);
+            makeWritable(ini);
+            DesktopIni content = DesktopIni.read(ini);
+            boolean changed = content.remove(SECTION, ICON_KEY);
+
+            if (content.hasEntries()) {
+                if (changed) {
+                    content.write(ini);
+                }
+                Files.setAttribute(ini, "dos:hidden", true);
+                Files.setAttribute(ini, "dos:system", true);
+                iniRemains = true;
+            } else {
+                Files.delete(ini);
+            }
         }
-        Files.setAttribute(folder, "dos:readonly", false);
+
+        if (!iniRemains) {
+            Files.setAttribute(folder, "dos:readonly", false);
+        }
         refresh(folder);
     }
 
@@ -77,5 +98,12 @@ public final class FolderCustomizer {
         Shell32.INSTANCE.SHChangeNotify(
                 SHCNE_UPDATEITEM, SHCNF_PATHW,
                 new WString(folder.toAbsolutePath().toString()), null);
+    }
+
+    /** desktop.ini is normally hidden+system (and sometimes read-only): clear that before editing it. */
+    private static void makeWritable(Path ini) throws IOException {
+        Files.setAttribute(ini, "dos:hidden", false);
+        Files.setAttribute(ini, "dos:system", false);
+        Files.setAttribute(ini, "dos:readonly", false);
     }
 }
