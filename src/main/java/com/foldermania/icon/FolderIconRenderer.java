@@ -4,12 +4,14 @@ import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Area;
 import java.awt.geom.Path2D;
+import java.awt.geom.Rectangle2D;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.UnaryOperator;
 
 /** Draws a Windows 11 style folder, tinted with any color, with an optional overlay icon. */
 public final class FolderIconRenderer {
@@ -22,8 +24,13 @@ public final class FolderIconRenderer {
 
     private FolderIconRenderer() {}
 
-    /** Renders one square image of the given size. Overlay may be null. */
+    /** Renders a solid-color folder. Overlay may be null. */
     public static BufferedImage render(int size, Color base, BufferedImage overlay, double overlayScale) {
+        return render(size, FolderFill.solid(base), overlay, overlayScale);
+    }
+
+    /** Renders one square image of the given size. Overlay may be null. */
+    public static BufferedImage render(int size, FolderFill fill, BufferedImage overlay, double overlayScale) {
         BufferedImage img = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = img.createGraphics();
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -49,14 +56,17 @@ public final class FolderIconRenderer {
         tab.closePath();
         Area back = new Area(new RoundRectangle2D.Double(20, 62, 216, 148, 20, 20));
         back.add(new Area(tab));
-        g.setColor(backColor(base));
-        g.fill(back);
+        fillShape(g, back, fill, FolderIconRenderer::backColor);
 
-        // Front panel: lighter at the top, the base color at the bottom
+        // Front panel: the fill, then a white veil that is strongest at the top and fades out.
+        // Dark colors get a gentler veil, otherwise a black folder would fade to grey.
         RoundRectangle2D front = new RoundRectangle2D.Double(20, 80, 216, 136, 20, 20);
-        // Dark colors get a gentler gradient, otherwise a black folder would fade to grey
-        float lift = 0.12f + 0.26f * brightness(base);
-        g.setPaint(new GradientPaint(0, 80, mix(base, Color.WHITE, lift), 0, 216, base));
+        fillShape(g, front, fill, UnaryOperator.identity());
+        float brightness = fill.isTwoColor()
+                ? (brightness(fill.primary()) + brightness(fill.secondary())) / 2f
+                : brightness(fill.primary());
+        float lift = 0.12f + 0.26f * brightness;
+        g.setPaint(new GradientPaint(0, 80, new Color(1f, 1f, 1f, lift), 0, 216, new Color(1f, 1f, 1f, 0f)));
         g.fill(front);
 
         // Soft highlight on the top edge of the front panel
@@ -80,11 +90,49 @@ public final class FolderIconRenderer {
         return img;
     }
 
+    /**
+     * Fills a shape according to the fill mode. {@code tone} adjusts each color first
+     * (used to make the back panel a bit deeper than the front one).
+     */
+    private static void fillShape(Graphics2D g, Shape shape, FolderFill fill, UnaryOperator<Color> tone) {
+        Color c1 = tone.apply(fill.primary());
+        Color c2 = tone.apply(fill.secondary());
+        switch (fill.mode()) {
+            case SOLID -> {
+                g.setColor(c1);
+                g.fill(shape);
+            }
+            case GRADIENT -> {
+                // Runs along the diagonal of the folder, top-left to bottom-right
+                g.setPaint(new GradientPaint(30, 50, c1, 226, 216, c2));
+                g.fill(shape);
+            }
+            case SPLIT -> {
+                Shape oldClip = g.getClip();
+                g.clip(new Rectangle2D.Double(0, 0, 128, BASE));
+                g.setColor(c1);
+                g.fill(shape);
+                g.setClip(oldClip);
+
+                g.clip(new Rectangle2D.Double(128, 0, 128, BASE));
+                g.setColor(c2);
+                g.fill(shape);
+                g.setClip(oldClip);
+            }
+        }
+    }
+
     /** Builds a multi-size .ico file ready to be used by FolderCustomizer. */
     public static void createIco(Path out, Color base, BufferedImage overlay) throws IOException {
+        createIco(out, FolderFill.solid(base), overlay, 0.6);
+    }
+
+    /** Same as above, with any fill and overlay size. */
+    public static void createIco(Path out, FolderFill fill, BufferedImage overlay, double overlayScale)
+            throws IOException {
         List<BufferedImage> images = new ArrayList<>();
         for (int size : ICO_SIZES) {
-            images.add(render(size, base, overlay, 0.6));
+            images.add(render(size, fill, overlay, overlayScale));
         }
         IcoWriter.write(out, images);
     }
@@ -99,13 +147,5 @@ public final class FolderIconRenderer {
 
     private static float brightness(Color c) {
         return Color.RGBtoHSB(c.getRed(), c.getGreen(), c.getBlue(), null)[2];
-    }
-
-    /** Linear blend of two colors: t = 0 gives a, t = 1 gives b. */
-    private static Color mix(Color a, Color b, float t) {
-        return new Color(
-                Math.round(a.getRed() + (b.getRed() - a.getRed()) * t),
-                Math.round(a.getGreen() + (b.getGreen() - a.getGreen()) * t),
-                Math.round(a.getBlue() + (b.getBlue() - a.getBlue()) * t));
     }
 }

@@ -28,9 +28,37 @@ public final class AppSettings {
         load();
     }
 
+    /** Recent colors used for folders. */
     public List<String> recentColors() {
+        return recentColors("recentColors");
+    }
+
+    /** Recent colors used for the overlay icon. */
+    public List<String> recentIconColors() {
+        return recentColors("recentIconColors");
+    }
+
+    public void addRecentColor(String hex) {
+        addRecent("recentColors", hex);
+    }
+
+    public void addRecentIconColor(String hex) {
+        addRecent("recentIconColors", hex);
+    }
+
+    /** Language code (en, it, fr, es), or null if the user never chose one. */
+    public String language() {
+        return props.getProperty("language");
+    }
+
+    public void setLanguage(String code) {
+        props.setProperty("language", code);
+        save();
+    }
+
+    private List<String> recentColors(String key) {
         List<String> result = new ArrayList<>();
-        for (String s : props.getProperty("recentColors", "").split(",")) {
+        for (String s : props.getProperty(key, "").split(",")) {
             if (!s.isBlank()) {
                 result.add(s.trim());
             }
@@ -38,14 +66,14 @@ public final class AppSettings {
         return result;
     }
 
-    public void addRecentColor(String hex) {
-        List<String> list = recentColors();
+    private void addRecent(String key, String hex) {
+        List<String> list = recentColors(key);
         list.removeIf(c -> c.equalsIgnoreCase(hex));
         list.add(0, hex);
         while (list.size() > MAX_RECENT) {
             list.remove(list.size() - 1);
         }
-        props.setProperty("recentColors", String.join(",", list));
+        props.setProperty(key, String.join(",", list));
         save();
     }
 

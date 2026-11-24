@@ -1,6 +1,12 @@
 package com.foldermania.ui;
 
+import com.foldermania.i18n.I18n;
 import com.foldermania.icon.IconLibrary;
+import javafx.beans.binding.Bindings;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -17,13 +23,17 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.util.StringConverter;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.text.Collator;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
@@ -35,8 +45,8 @@ import java.util.function.BiConsumer;
  */
 public final class IconGallery extends VBox {
 
-    private static final int COMPACT_COUNT = 32;
-    private static final int COLUMNS = 8;
+    private static final int COMPACT_COUNT = 40;
+    private static final int COLUMNS = 10;
     private static final int CELL = 40;
     private static final int THUMB = 28;
     private static final String THUMB_COLOR = "#3C3C43";
@@ -48,11 +58,15 @@ public final class IconGallery extends VBox {
     private final VBox expandedBox = new VBox(8);
     private final TextField searchField = new TextField();
     private final ComboBox<String> categoryBox = new ComboBox<>();
-    private final ToggleButton outlineButton = new ToggleButton("Outline");
-    private final ToggleButton filledButton = new ToggleButton("Filled");
+    private final ToggleButton outlineButton = new ToggleButton();
+    private final ToggleButton filledButton = new ToggleButton();
     private final ListView<List<IconLibrary.Entry>> list = new ListView<>();
     private final Label countLabel = new Label();
     private final Button expandButton = new Button();
+    private final BooleanProperty expanded = new SimpleBooleanProperty(false);
+    private final IntegerProperty resultCount = new SimpleIntegerProperty();
+    /** Ignores category changes while the combo box is being rebuilt (language change). */
+    private boolean rebuildingCategories;
 
     /** Least recently used thumbnails are dropped once the cache holds 800 of them. */
     private final Map<String, Image> thumbnails = new LinkedHashMap<>(256, 0.75f, true) {
@@ -72,7 +86,12 @@ public final class IconGallery extends VBox {
         buildCompactBox();
         buildExpandedBox();
 
-        expandButton.setOnAction(e -> setExpanded(!expandedBox.isVisible()));
+        expandButton.textProperty().bind(Bindings.createStringBinding(
+                () -> expanded.get()
+                        ? I18n.tr("gallery.showFewer")
+                        : I18n.tr("gallery.showAll", library.size()),
+                expanded, I18n.languageProperty()));
+        expandButton.setOnAction(e -> setExpanded(!expanded.get()));
         setExpanded(false);
 
         setAlignment(Pos.TOP_CENTER);
@@ -96,17 +115,23 @@ public final class IconGallery extends VBox {
     }
 
     private void buildExpandedBox() {
-        searchField.setPromptText("Search all icons (e.g. music, folder, game)...");
+        searchField.promptTextProperty().bind(I18n.binding("gallery.search"));
         searchField.textProperty().addListener((obs, old, val) -> refresh());
 
-        categoryBox.getItems().add(IconLibrary.POPULAR);
-        categoryBox.getItems().add(IconLibrary.ALL);
-        categoryBox.getItems().addAll(library.categories());
+        rebuildCategories();
         categoryBox.setValue(IconLibrary.POPULAR);
-        categoryBox.valueProperty().addListener((obs, old, val) -> refresh());
+        categoryBox.valueProperty().addListener((obs, old, val) -> {
+            if (!rebuildingCategories) {
+                refresh();
+            }
+        });
+        // Category names are translated and sorted by their translation: redo that when the language changes
+        I18n.languageProperty().addListener((obs, old, now) -> rebuildCategories());
 
         // Exactly one style is always selected
         ToggleGroup styleGroup = new ToggleGroup();
+        outlineButton.textProperty().bind(I18n.binding("gallery.outline"));
+        filledButton.textProperty().bind(I18n.binding("gallery.filled"));
         outlineButton.setToggleGroup(styleGroup);
         filledButton.setToggleGroup(styleGroup);
         outlineButton.setSelected(true);
@@ -119,7 +144,9 @@ public final class IconGallery extends VBox {
         });
 
         list.setFixedCellSize(CELL + 4);
+        list.getStyleClass().add("icon-list");
         list.setPrefHeight(300);
+        VBox.setVgrow(list, Priority.ALWAYS);
         // The list is a picker, not a selection list: hide the row selection and the zebra stripes
         list.setStyle("-fx-selection-bar: transparent; -fx-selection-bar-non-focused: transparent;"
                 + " -fx-control-inner-background-alt: -fx-control-inner-background;");
@@ -148,22 +175,69 @@ public final class IconGallery extends VBox {
 
         HBox filters = new HBox(8, categoryBox, outlineButton, filledButton);
         filters.setAlignment(Pos.CENTER_LEFT);
+        countLabel.getStyleClass().add("muted");
+        countLabel.textProperty().bind(Bindings.createStringBinding(
+                () -> I18n.tr("gallery.count", resultCount.get()), resultCount, I18n.languageProperty()));
         expandedBox.getChildren().addAll(searchField, filters, list, countLabel);
     }
 
     // ---------- Behaviour ----------
 
-    private void setExpanded(boolean expanded) {
-        compactBox.setVisible(!expanded);
-        compactBox.setManaged(!expanded);
-        expandedBox.setVisible(expanded);
-        expandedBox.setManaged(expanded);
-        expandButton.setText(expanded
-                ? "Show fewer icons"
-                : "Show all icons (" + library.size() + ")");
-        if (expanded) {
+    private void setExpanded(boolean value) {
+        expanded.set(value);
+        compactBox.setVisible(!value);
+        compactBox.setManaged(!value);
+        expandedBox.setVisible(value);
+        expandedBox.setManaged(value);
+        if (value) {
             refresh();
         }
+    }
+
+    /** Fills the category box: Popular, All, then the categories sorted by their translated name. */
+    private void rebuildCategories() {
+        String selected = categoryBox.getValue();
+        Collator collator = Collator.getInstance(I18n.language().locale());
+        List<String> categories = new ArrayList<>(library.categories());
+        categories.sort((a, b) -> collator.compare(categoryLabel(a), categoryLabel(b)));
+
+        List<String> items = new ArrayList<>();
+        items.add(IconLibrary.POPULAR);
+        items.add(IconLibrary.ALL);
+        items.addAll(categories);
+
+        rebuildingCategories = true;
+        try {
+            categoryBox.setConverter(new StringConverter<>() {
+                @Override
+                public String toString(String category) {
+                    return category == null ? "" : categoryLabel(category);
+                }
+
+                @Override
+                public String fromString(String text) {
+                    return text;
+                }
+            });
+            categoryBox.getItems().setAll(items);
+            categoryBox.setValue(null);
+            categoryBox.setValue(selected != null ? selected : IconLibrary.POPULAR);
+        } finally {
+            rebuildingCategories = false;
+        }
+    }
+
+    /** The translated name of a category ("Version control" -> key cat.version_control). */
+    private static String categoryLabel(String category) {
+        if (IconLibrary.POPULAR.equals(category)) {
+            return I18n.tr("gallery.popular");
+        }
+        if (IconLibrary.ALL.equals(category)) {
+            return I18n.tr("gallery.all");
+        }
+        String key = "cat." + category.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "_");
+        String text = I18n.tr(key);
+        return text.equals(key) ? category : text; // untranslated: show the original name
     }
 
     private IconLibrary.Style currentStyle() {
@@ -185,7 +259,7 @@ public final class IconGallery extends VBox {
         }
         list.getItems().setAll(rows);
         list.scrollTo(0);
-        countLabel.setText(results.size() + " icons");
+        resultCount.set(results.size());
     }
 
     private Button iconButton(IconLibrary.Entry entry, IconLibrary.Style style) {
@@ -195,6 +269,7 @@ public final class IconGallery extends VBox {
         button.setMaxSize(CELL, CELL);
         button.setGraphic(thumbnail(entry, style));
         button.setTooltip(new Tooltip(entry.label()));
+        button.getStyleClass().add("icon-button");
         button.setOnAction(e -> onPick.accept(entry, style));
         return button;
     }

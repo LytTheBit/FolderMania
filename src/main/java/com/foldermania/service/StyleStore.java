@@ -1,5 +1,8 @@
 package com.foldermania.service;
 
+import com.foldermania.icon.FolderFill;
+import com.foldermania.icon.FolderIconRenderer;
+
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -17,11 +20,11 @@ public final class StyleStore {
     public static final String STYLE_NAME = ".foldermania.properties";
     public static final String OVERLAY_NAME = ".foldermania-overlay.png";
 
-    public record Style(String colorHex, double overlayScale, BufferedImage overlay) {}
+    public record Style(FolderFill fill, double overlayScale, BufferedImage overlay) {}
 
     private StyleStore() {}
 
-    public static void write(Path folder, String colorHex, double overlayScale, BufferedImage overlay)
+    public static void write(Path folder, FolderFill fill, double overlayScale, BufferedImage overlay)
             throws IOException {
         Path styleFile = folder.resolve(STYLE_NAME);
         Path overlayFile = folder.resolve(OVERLAY_NAME);
@@ -29,7 +32,9 @@ public final class StyleStore {
         FileAttrs.unhide(overlayFile);
 
         Properties props = new Properties();
-        props.setProperty("color", colorHex);
+        props.setProperty("mode", fill.mode().name());
+        props.setProperty("color", FolderFill.toHex(fill.primary()));
+        props.setProperty("color2", FolderFill.toHex(fill.secondary()));
         props.setProperty("overlayScale", Double.toString(overlayScale));
         try (OutputStream out = Files.newOutputStream(styleFile)) {
             props.store(out, null);
@@ -59,10 +64,19 @@ public final class StyleStore {
             if (color == null) {
                 return Optional.empty();
             }
+            // Files written by older versions have no mode: they are plain one-color folders
+            FolderFill.Mode mode;
+            try {
+                mode = FolderFill.Mode.valueOf(props.getProperty("mode", "SOLID"));
+            } catch (IllegalArgumentException e) {
+                mode = FolderFill.Mode.SOLID;
+            }
+            java.awt.Color primary = FolderFill.parseHex(color, FolderIconRenderer.DEFAULT_COLOR);
+            java.awt.Color secondary = FolderFill.parseHex(props.getProperty("color2"), primary);
             double scale = Double.parseDouble(props.getProperty("overlayScale", "0.6"));
             Path overlayFile = folder.resolve(OVERLAY_NAME);
             BufferedImage overlay = Files.exists(overlayFile) ? ImageIO.read(overlayFile.toFile()) : null;
-            return Optional.of(new Style(color, scale, overlay));
+            return Optional.of(new Style(new FolderFill(mode, primary, secondary), scale, overlay));
         } catch (IOException | NumberFormatException e) {
             return Optional.empty();
         }

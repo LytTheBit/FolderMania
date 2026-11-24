@@ -1,0 +1,312 @@
+/* Folder Mania - application theme (JavaFX CSS) */
+
+.root {
+    -fx-accent: #6D5DF6;
+    -fx-focus-color: #6D5DF6;
+    -fx-faint-focus-color: rgba(109, 93, 246, 0.15);
+    -fx-text-background-color: #1F2433;
+    -fx-control-inner-background: #FFFFFF;
+    -fx-font-family: "Segoe UI", "Inter", "Helvetica Neue", Arial, sans-serif;
+    -fx-font-size: 13px;
+    -fx-background-color: #F3F4F9;
+}
+
+/* ---------- Menu bar ---------- */
+.menu-bar {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: transparent transparent #E6E8F0 transparent;
+}
+
+/* ---------- Cards and text ---------- */
+.card {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 16;
+    -fx-border-color: #E6E8F0;
+    -fx-border-radius: 16;
+    -fx-padding: 16;
+    -fx-effect: dropshadow(gaussian, rgba(31, 36, 51, 0.07), 16, 0.0, 0, 4);
+}
+
+.card-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+.section-title {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #6B7185;
+}
+
+.muted {
+    -fx-text-fill: #6B7185;
+    -fx-font-size: 12px;
+}
+
+.preview-stage {
+    -fx-background-color: linear-gradient(to bottom right, #EEF0FA, #F9F1F7);
+    -fx-background-radius: 14;
+    -fx-padding: 12;
+}
+
+/* ---------- Buttons ---------- */
+.button {
+    -fx-background-color: #FFFFFF;
+    -fx-background-insets: 0;
+    -fx-background-radius: 9;
+    -fx-border-color: #D8DBE8;
+    -fx-border-radius: 9;
+    -fx-padding: 7 14 7 14;
+    -fx-cursor: hand;
+}
+
+.button:hover {
+    -fx-background-color: #F2F3FA;
+}
+
+.button:pressed {
+    -fx-background-color: #E8EAF6;
+}
+
+.button:focused {
+    -fx-border-color: #B9B1FA;
+}
+
+.button:disabled {
+    -fx-opacity: 0.5;
+}
+
+.button.primary {
+    -fx-background-color: linear-gradient(to right, #6D5DF6, #F0408F);
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-border-color: transparent;
+    -fx-padding: 9 28 9 28;
+}
+
+.button.primary:hover {
+    -fx-background-color: linear-gradient(to right, #7E70FA, #F45A9F);
+}
+
+.button.primary:pressed {
+    -fx-background-color: linear-gradient(to right, #5B4BE0, #D9317F);
+}
+
+.button.icon-action {
+    -fx-font-size: 16px;
+    -fx-padding: 4 10 4 10;
+}
+
+/* ---------- Segmented switches (style and tabs) ---------- */
+.toggle-button.segment {
+    -fx-background-color: #FFFFFF;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+    -fx-border-color: #D8DBE8;
+    -fx-border-radius: 0;
+    -fx-padding: 8 22 8 22;
+    -fx-cursor: hand;
+}
+
+.toggle-button.segment.first {
+    -fx-background-radius: 10 0 0 10;
+    -fx-border-radius: 10 0 0 10;
+}
+
+.toggle-button.segment.last {
+    -fx-background-radius: 0 10 10 0;
+    -fx-border-radius: 0 10 10 0;
+}
+
+.toggle-button.segment:hover {
+    -fx-background-color: #F2F3FA;
+}
+
+.toggle-button.segment:selected {
+    -fx-background-color: #6D5DF6;
+    -fx-border-color: #6D5DF6;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+/* ---------- Color slots ---------- */
+.toggle-button.chip {
+    -fx-background-color: #FFFFFF;
+    -fx-background-insets: 0;
+    -fx-background-radius: 11;
+    -fx-border-color: #D8DBE8;
+    -fx-border-radius: 11;
+    -fx-border-width: 1;
+    -fx-padding: 6 16 6 8;
+    -fx-graphic-text-gap: 9;
+    -fx-cursor: hand;
+}
+
+.toggle-button.chip:hover {
+    -fx-background-color: #F6F6FC;
+}
+
+.toggle-button.chip:selected {
+    -fx-background-color: #F1EFFF;
+    -fx-border-color: #6D5DF6;
+    -fx-border-width: 2;
+    -fx-padding: 5 15 5 7;
+    -fx-font-weight: bold;
+}
+
+/* ---------- Color swatches ---------- */
+.button.swatch {
+    -fx-background-insets: 0;
+    -fx-background-radius: 8;
+    -fx-border-color: rgba(0, 0, 0, 0.18);
+    -fx-border-radius: 8;
+    -fx-padding: 0;
+}
+
+.button.swatch:hover {
+    -fx-border-color: rgba(0, 0, 0, 0.45);
+}
+
+.button.swatch.selected {
+    -fx-border-color: #FFFFFF;
+    -fx-border-width: 2.5;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.65), 6, 0.45, 0, 0);
+}
+
+.color-picker.custom-color-picker {
+    -fx-background-color: #FFFFFF;
+    -fx-background-insets: 0;
+    -fx-background-radius: 9;
+    -fx-border-color: #D8DBE8;
+    -fx-border-radius: 9;
+}
+
+.color-picker.custom-color-picker > .color-picker-label {
+    -fx-content-display: graphic-only;
+}
+
+/* ---------- Lists and scroll panes ---------- */
+.scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+.list-view {
+    -fx-background-color: #FAFBFE;
+    -fx-background-insets: 0;
+    -fx-background-radius: 10;
+    -fx-border-color: #E1E4EF;
+    -fx-border-radius: 10;
+    -fx-padding: 2;
+}
+
+.list-view .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #1F2433;
+}
+
+.list-view .list-cell:filled:hover {
+    -fx-background-color: rgba(109, 93, 246, 0.07);
+}
+
+.list-view .list-cell:filled:selected {
+    -fx-background-color: rgba(109, 93, 246, 0.16);
+    -fx-text-fill: #1F2433;
+}
+
+.list-view.drop-target {
+    -fx-background-color: #EEF0FF;
+    -fx-border-color: #6D5DF6;
+    -fx-border-style: dashed;
+    -fx-border-width: 2;
+}
+
+/* The icon picker is a list of icon rows, not a selection list */
+.list-view.icon-list .list-cell,
+.list-view.icon-list .list-cell:filled:hover,
+.list-view.icon-list .list-cell:filled:selected {
+    -fx-background-color: transparent;
+}
+
+.button.icon-button {
+    -fx-padding: 0;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-color: transparent;
+    -fx-background-color: transparent;
+}
+
+.button.icon-button:hover {
+    -fx-background-color: rgba(109, 93, 246, 0.12);
+    -fx-border-color: rgba(109, 93, 246, 0.35);
+}
+
+/* ---------- Inputs ---------- */
+.text-field {
+    -fx-background-color: #FFFFFF;
+    -fx-background-insets: 0;
+    -fx-background-radius: 9;
+    -fx-border-color: #D8DBE8;
+    -fx-border-radius: 9;
+    -fx-padding: 7 10 7 10;
+}
+
+.text-field:focused {
+    -fx-border-color: #6D5DF6;
+}
+
+.combo-box-base {
+    -fx-background-color: #FFFFFF;
+    -fx-background-insets: 0;
+    -fx-background-radius: 9;
+    -fx-border-color: #D8DBE8;
+    -fx-border-radius: 9;
+}
+
+.combo-box-base > .arrow-button {
+    -fx-background-color: transparent;
+}
+
+.check-box .box {
+    -fx-background-color: #FFFFFF;
+    -fx-background-insets: 0;
+    -fx-background-radius: 5;
+    -fx-border-color: #B9BED2;
+    -fx-border-radius: 5;
+}
+
+.check-box:selected .box {
+    -fx-background-color: #6D5DF6;
+    -fx-border-color: #6D5DF6;
+}
+
+.check-box:selected .mark {
+    -fx-background-color: #FFFFFF;
+}
+
+.slider .track {
+    -fx-background-color: #DDE0EE;
+    -fx-background-insets: 0;
+    -fx-background-radius: 4;
+}
+
+.slider .thumb {
+    -fx-background-color: #FFFFFF;
+    -fx-background-insets: 0;
+    -fx-background-radius: 10;
+    -fx-border-color: #6D5DF6;
+    -fx-border-width: 2;
+    -fx-border-radius: 10;
+}
+
+/* ---------- Bottom action bar ---------- */
+.action-bar {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E6E8F0 transparent transparent transparent;
+    -fx-padding: 12 16 12 16;
+}

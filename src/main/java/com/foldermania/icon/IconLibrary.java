@@ -12,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeSet;
 
 /**
@@ -54,6 +55,7 @@ public final class IconLibrary {
     private static IconLibrary instance;
 
     private final List<Entry> all;
+    private final Map<String, Entry> byName;
     private final List<Entry> popular;
     private final List<String> categories;
 
@@ -90,6 +92,7 @@ public final class IconLibrary {
             }
         }
 
+        this.byName = Map.copyOf(byName);
         this.all = List.copyOf(byName.values());
         this.popular = List.copyOf(pop);
         this.categories = List.copyOf(cats);
@@ -104,6 +107,11 @@ public final class IconLibrary {
             }
         }
         return instance;
+    }
+
+    /** Finds an icon by its exact name, e.g. "palette". */
+    public Optional<Entry> find(String name) {
+        return Optional.ofNullable(byName.get(name));
     }
 
     public List<Entry> popular() {

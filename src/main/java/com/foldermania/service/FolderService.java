@@ -1,10 +1,10 @@
 package com.foldermania.service;
 
+import com.foldermania.icon.FolderFill;
 import com.foldermania.icon.FolderIconRenderer;
 import com.foldermania.icon.IcoWriter;
 import com.foldermania.shell.FolderCustomizer;
 
-import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
@@ -67,8 +67,8 @@ public final class FolderService {
         return new ArrayList<>(result);
     }
 
-    public BatchResult applyAll(List<Path> folders, Color color, BufferedImage overlay, double overlayScale) {
-        return runBatch(folders, folder -> apply(folder, color, overlay, overlayScale));
+    public BatchResult applyAll(List<Path> folders, FolderFill fill, BufferedImage overlay, double overlayScale) {
+        return runBatch(folders, folder -> apply(folder, fill, overlay, overlayScale));
     }
 
     public BatchResult resetAll(List<Path> folders) {
@@ -126,19 +126,19 @@ public final class FolderService {
         return new BatchResult(ok, failed);
     }
 
-    private static void apply(Path folder, Color color, BufferedImage overlay, double overlayScale)
+    private static void apply(Path folder, FolderFill fill, BufferedImage overlay, double overlayScale)
             throws IOException {
         Path ico = folder.resolve(ICON_NAME);
         FileAttrs.unhide(ico);
 
         List<BufferedImage> images = new ArrayList<>();
         for (int size : SIZES) {
-            images.add(FolderIconRenderer.render(size, color, overlay, overlayScale));
+            images.add(FolderIconRenderer.render(size, fill, overlay, overlayScale));
         }
         IcoWriter.write(ico, images);
         FileAttrs.hide(ico);
 
-        StyleStore.write(folder, toHex(color), overlayScale, overlay);
+        StyleStore.write(folder, fill, overlayScale, overlay);
         FolderCustomizer.applyIcon(folder, ico);
     }
 
@@ -148,9 +148,5 @@ public final class FolderService {
         FileAttrs.unhide(ico);
         Files.deleteIfExists(ico);
         StyleStore.delete(folder);
-    }
-
-    private static String toHex(Color c) {
-        return String.format("#%02X%02X%02X", c.getRed(), c.getGreen(), c.getBlue());
     }
 }

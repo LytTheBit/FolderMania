@@ -1,11 +1,15 @@
 package com.foldermania.shell;
 
+import com.foldermania.i18n.I18n;
 import com.sun.jna.platform.win32.Advapi32Util;
 import com.sun.jna.platform.win32.WinReg;
 
 import java.nio.file.Path;
 
-/** Adds or removes the "Customize with Folder Mania" entry in the folder context menu (per-user, no admin needed). */
+/**
+ * Adds or removes the "Customize with Folder Mania" entry in the folder context menu
+ * (per-user, no admin needed). The entry text follows the app language at install time.
+ */
 public final class ContextMenuInstaller {
 
     private static final WinReg.HKEY ROOT = WinReg.HKEY_CURRENT_USER;
@@ -27,7 +31,7 @@ public final class ContextMenuInstaller {
         }
 
         Advapi32Util.registryCreateKey(ROOT, KEY);
-        Advapi32Util.registrySetStringValue(ROOT, KEY, "", "Customize with Folder Mania");
+        Advapi32Util.registrySetStringValue(ROOT, KEY, "", I18n.tr("context.entry"));
         Advapi32Util.registrySetStringValue(ROOT, KEY, "Icon", "\"" + exe + "\",0");
         Advapi32Util.registryCreateKey(ROOT, COMMAND_KEY);
         Advapi32Util.registrySetStringValue(ROOT, COMMAND_KEY, "", "\"" + exe + "\" \"%1\"");

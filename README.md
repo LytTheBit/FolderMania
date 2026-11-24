@@ -1,17 +1,20 @@
 # Folder Mania
 
-Customize your Windows folders with **colors** and **overlay icons**, in bulk, without touching the files inside them.
+Customize your Windows folders with **colors**, **gradients** and **overlay icons**, in bulk, without touching the files inside them.
 
-Folder Mania is a desktop app written in Java 21 with JavaFX. It generates a custom folder icon (the classic folder shape in the color you pick, with an optional icon on top) and applies it through the standard Windows `desktop.ini` mechanism, so the result shows up in Explorer without any background process or shell extension.
+Folder Mania is a desktop app written in Java 21 with JavaFX. It generates a custom folder icon (the classic folder shape in one or two colors you pick, with an optional icon on top) and applies it through the standard Windows `desktop.ini` mechanism, so the result shows up in Explorer without any background process or shell extension.
 
 <!-- Add a screenshot here, e.g. ![Folder Mania](docs/screenshot.png) -->
 
 ## Features
 
-- **Color palette**: 11 color families with 3 shades each, a free color picker, and the last 8 colors you used.
-- **Built-in icon library**: over 5,000 icons from [Tabler Icons](https://tabler.io/icons), in outline and filled styles, with search, categories, a "Popular" tab, and a custom icon color.
+- **Color palette**: 11 color families with 3 shades each (33 colors), a button to pick *any* other color, and the last 8 colors you used.
+- **Two-color folders**: solid, a diagonal **gradient**, or **split** in half (left and right). A swap button exchanges the two colors.
+- **Built-in icon library**: over 5,000 icons from [Tabler Icons](https://tabler.io/icons), in outline and filled styles, with search, translated categories, a "Popular" tab, and a custom icon color.
+- **Icon colors**: icons use the same 33 palette colors as folders, plus any custom color, plus their own recent colors.
 - **Your own icons**: load a PNG, JPG, GIF or **SVG** file (SVGs are rasterized with [JSVG](https://github.com/weisj/jsvg)).
-- **Live preview** and an adjustable icon size.
+- **Live preview** at 224 px and at the real Explorer sizes (48, 32 and 16 px), with an adjustable icon size.
+- **Languages**: English, Italiano, Français and Español, switchable at any time from the **Language** menu (the first start follows the system language).
 - **Batch editing**: add many folders at once (button, drag and drop, or command line) and optionally include all their subfolders. Hidden and system subfolders are skipped.
 - **Undo**: revert the last batch. A failed folder is rolled back, so you never end up with a half-applied change.
 - **Edit later**: the chosen style is stored in the folder itself, so selecting a customized folder loads its current color and icon back into the editor.
@@ -56,7 +59,7 @@ GitHub Actions builds the installer on every push (download it from the run's ar
 ## Usage
 
 1. Add one or more folders (**Add folder...**, drag and drop onto the window, or the context menu).
-2. Pick a color and, optionally, an icon from the library or from a file.
+2. On the **Folder** tab pick a color (or a gradient / split with two colors). On the **Icon** tab pick an icon from the library or from a file, and its color.
 3. Adjust the icon size and check the preview.
 4. Click **Apply**. Use **Reset** to restore the default folder icon, or **Undo** to revert the last operation.
 
@@ -84,25 +87,32 @@ For each customized folder, Folder Mania writes three small hidden files next to
 | File | Purpose |
 |------|---------|
 | `.foldermania.ico` | The generated multi-size icon (16 to 256 px) |
-| `.foldermania.properties` | The chosen color and icon size |
+| `.foldermania.properties` | The chosen style (solid, gradient or split), its colors and the icon size |
 | `.foldermania-overlay.png` | The overlay image, so the style can be edited later |
 
 It then sets the `IconResource` key in the folder's `desktop.ini` (updating an existing file in place, so other keys like `LocalizedResourceName` are preserved) and notifies Explorer to redraw the folder. The icon is referenced with a relative path, so the customization survives moving or renaming the folder.
 
 Windows only reads `desktop.ini` from folders that are read-only or system folders, so the folder gets the read-only attribute. This flag is not related to whether you can write files in the folder.
 
-Settings (recent colors) are stored in `%APPDATA%\FolderMania\settings.properties`.
+Settings (recent colors and language) are stored in `%APPDATA%\FolderMania\settings.properties`.
 
 ## Project structure
 
 ```
 src/main/java/com/foldermania/
-├── ui/         JavaFX interface (main window, icon gallery, color palette)
+├── ui/         JavaFX interface (main window, icon gallery, color selector, palette)
+├── i18n/       Translations (texts live in src/main/resources/i18n/messages_xx.properties)
 ├── icon/       Icon rendering, .ico writer, SVG loading, Tabler icon library
 ├── service/    Batch operations, undo, per-folder style storage, cleanup
 ├── shell/      Windows integration: desktop.ini, Explorer refresh, context menu (JNA)
 ├── settings/   User settings
 └── tools/      Development tools (app icon generator)
+
+src/main/resources/
+├── foldermania.css   Application theme
+├── i18n/             English, Italian, French and Spanish texts
+├── icons/tabler/     Icon library
+└── app.ico           Application icon (regenerate it by running tools.AppIconGenerator)
 ```
 
 ## Tech stack
@@ -112,6 +122,13 @@ src/main/java/com/foldermania/
 - [JNA](https://github.com/java-native-access/jna) for the Windows registry and shell calls
 - [JSVG](https://github.com/weisj/jsvg) for SVG rendering
 - `jpackage` for the portable app and the installer
+
+## Adding a language
+
+1. Copy `src/main/resources/i18n/messages_en.properties` to `messages_xx.properties` and translate the values (UTF-8, keep the `{0}` placeholders).
+2. Add the language to the `Language` enum in `i18n/I18n.java`.
+
+Missing keys fall back to English.
 
 ## Credits
 
