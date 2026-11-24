@@ -21,6 +21,9 @@ Folder Mania is a desktop app written in Java 21 with JavaFX. It generates a cus
 - **Explorer integration**: optional "Customize with Folder Mania" entry in the folder context menu (per-user, no admin rights).
 - **Clean uninstall**: removes the context menu entry and the saved settings.
 
+<img width="1964" height="1454" alt="image" src="https://github.com/user-attachments/assets/e0b6e82c-17c6-4081-b92f-8807b2fd3dfb" />
+
+
 ## Requirements
 
 - Windows 10 or 11
@@ -38,6 +41,9 @@ gradlew run
 ```
 
 You can also open the folder in IntelliJ IDEA (it imports the Gradle project automatically) and run the Gradle task `run`.
+
+<img width="3840" height="2160" alt="image" src="https://github.com/user-attachments/assets/5423b155-fb8a-4dc5-82d2-bff9fd3ddca2" />
+
 
 ## Build a Windows app
 
@@ -68,6 +74,9 @@ GitHub Actions builds the installer on every push (download it from the run's ar
 Start the packaged app, then choose **Tools > Add to folder context menu**. Right-click any folder and pick **Customize with Folder Mania**. On Windows 11 the entry appears under "Show more options".
 
 The entry can only be installed from the packaged app, not from the IDE, because it needs the path of the real `.exe`.
+
+<img width="3840" height="2160" alt="image" src="https://github.com/user-attachments/assets/95d287c6-93d2-48e7-b41f-dc11764885de" />
+
 
 ### Command line
 
