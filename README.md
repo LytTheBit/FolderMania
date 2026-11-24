@@ -42,7 +42,7 @@ gradlew run
 
 You can also open the folder in IntelliJ IDEA (it imports the Gradle project automatically) and run the Gradle task `run`.
 
-<img width="3840" height="2160" alt="image" src="https://github.com/user-attachments/assets/5423b155-fb8a-4dc5-82d2-bff9fd3ddca2" />
+<img width="1964" height="1454" alt="image" src="https://github.com/user-attachments/assets/ca11d93a-ec7d-42c6-9916-c7687b7905ca" />
 
 
 ## Build a Windows app
@@ -75,7 +75,7 @@ Start the packaged app, then choose **Tools > Add to folder context menu**. Righ
 
 The entry can only be installed from the packaged app, not from the IDE, because it needs the path of the real `.exe`.
 
-<img width="3840" height="2160" alt="image" src="https://github.com/user-attachments/assets/95d287c6-93d2-48e7-b41f-dc11764885de" />
+<img width="1964" height="1454" alt="image" src="https://github.com/user-attachments/assets/75051e4c-d1c9-4c2a-8111-823483565e66" />
 
 
 ### Command line
