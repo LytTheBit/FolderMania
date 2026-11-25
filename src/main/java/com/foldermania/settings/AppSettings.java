@@ -28,6 +28,11 @@ public final class AppSettings {
         load();
     }
 
+    /** Directory holding settings, presets and rules. */
+    public Path dir() {
+        return dir;
+    }
+
     /** Recent colors used for folders. */
     public List<String> recentColors() {
         return recentColors("recentColors");
