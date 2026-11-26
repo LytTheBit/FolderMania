@@ -9,6 +9,7 @@ import com.foldermania.icon.IconLibrary;
 import com.foldermania.icon.OverlayImageLoader;
 import com.foldermania.service.CleanupService;
 import com.foldermania.service.FolderService;
+import com.foldermania.service.PresetStore;
 import com.foldermania.service.StyleStore;
 import com.foldermania.settings.AppSettings;
 import com.foldermania.shell.ContextMenuInstaller;
@@ -31,6 +32,10 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.ChoiceDialog;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.Menu;
@@ -80,6 +85,7 @@ public class MainApp extends Application {
 
     private final AppSettings settings = new AppSettings();
     private final FolderService service = new FolderService();
+    private final PresetStore presets = new PresetStore(settings.dir());
 
     // --- Folders ---
     private final ObservableList<Path> folders = FXCollections.observableArrayList();
@@ -563,7 +569,12 @@ public class MainApp extends Application {
         if (style.isEmpty()) {
             return;
         }
-        StyleStore.Style s = style.get();
+        showStyle(style.get());
+        status.setText(I18n.tr("status.loaded", folder));
+    }
+
+    /** Loads a style into the editor. */
+    private void showStyle(StyleStore.Style s) {
         color1.set(ColorSelector.fromAwt(s.fill().primary()));
         color2.set(ColorSelector.fromAwt(s.fill().secondary()));
         for (var toggle : modeGroup.getToggles()) {
@@ -576,7 +587,100 @@ public class MainApp extends Application {
         clearLibraryIcon();
         overlay = s.overlay();
         updatePreview();
-        status.setText(I18n.tr("status.loaded", folder));
+    }
+
+    // ---------- Presets and rules ----------
+
+    /** Rebuilt every time it opens, so it always lists the current presets. */
+    private void fillPresetMenu(Menu menu) {
+        MenuItem save = menuItem("menu.presets.save");
+        save.setOnAction(e -> savePreset());
+        MenuItem delete = menuItem("menu.presets.delete");
+        delete.setOnAction(e -> deletePreset());
+        List<String> names = presets.names();
+        delete.setDisable(names.isEmpty());
+        menu.getItems().setAll(save, delete, new SeparatorMenuItem());
+        if (names.isEmpty()) {
+            MenuItem none = menuItem("menu.presets.none");
+            none.setDisable(true);
+            menu.getItems().add(none);
+        }
+        for (String name : names) {
+            MenuItem item = new MenuItem(name);
+            item.setOnAction(e -> presets.load(name).ifPresent(s -> {
+                showStyle(s);
+                status.setText(I18n.tr("status.presetLoaded", name));
+            }));
+            menu.getItems().add(item);
+        }
+    }
+
+    private void savePreset() {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setHeaderText(I18n.tr("dialog.preset.name"));
+        styleDialog(dialog);
+        dialog.showAndWait().map(String::trim).filter(n -> !n.isEmpty()).ifPresent(name -> {
+            try {
+                presets.save(name, currentFill(), scaleSlider.getValue(), overlay);
+                status.setText(I18n.tr("status.presetSaved", name));
+            } catch (Exception ex) {
+                status.setText(I18n.tr("status.error", ex.getMessage()));
+            }
+        });
+    }
+
+    private void deletePreset() {
+        List<String> names = presets.names();
+        ChoiceDialog<String> dialog = new ChoiceDialog<>(names.get(0), names);
+        dialog.setHeaderText(I18n.tr("dialog.preset.delete"));
+        styleDialog(dialog);
+        dialog.showAndWait().ifPresent(name -> {
+            try {
+                presets.delete(name);
+                status.setText(I18n.tr("status.presetDeleted", name));
+            } catch (Exception ex) {
+                status.setText(I18n.tr("status.error", ex.getMessage()));
+            }
+        });
+    }
+
+    private void editRules() {
+        TextArea text = new TextArea(presets.rulesText());
+        text.setPromptText(I18n.tr("dialog.rules.example"));
+        text.setPrefSize(520, 300);
+        Label help = new Label(I18n.tr("dialog.rules.help", String.join(", ", presets.names())));
+        help.setWrapText(true);
+        help.getStyleClass().add("muted");
+
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle(I18n.tr("menu.rules.edit"));
+        dialog.getDialogPane().setContent(new VBox(10, help, text));
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        styleDialog(dialog);
+        dialog.showAndWait().filter(b -> b == ButtonType.OK).ifPresent(b -> {
+            try {
+                presets.saveRulesText(text.getText());
+                status.setText(I18n.trn("status.rulesSaved", presets.rules().size()));
+            } catch (Exception ex) {
+                status.setText(I18n.tr("status.error", ex.getMessage()));
+            }
+        });
+    }
+
+    private void applyRules() {
+        if (folders.isEmpty()) {
+            status.setText(I18n.tr("status.needFolder"));
+            return;
+        }
+        boolean includeSub = recursive.isSelected();
+        List<Path> roots = List.copyOf(folders);
+        runBatch("status.applied", () ->
+                service.applyStyles(presets.match(FolderService.expand(roots, includeSub))));
+    }
+
+    private void styleDialog(Dialog<?> dialog) {
+        dialog.initOwner(stage);
+        dialog.getDialogPane().getStylesheets().add(stylesheet());
     }
 
     // ---------- Actions ----------
@@ -743,7 +847,20 @@ public class MainApp extends Application {
         help.textProperty().bind(I18n.binding("menu.help"));
         help.getItems().add(about);
 
-        return new MenuBar(tools, language, help);
+        Menu presetMenu = new Menu();
+        presetMenu.textProperty().bind(I18n.binding("menu.presets"));
+        presetMenu.getItems().add(new MenuItem()); // a Menu with no items never fires onShowing
+        presetMenu.setOnShowing(e -> fillPresetMenu(presetMenu));
+
+        MenuItem editRules = menuItem("menu.rules.edit");
+        editRules.setOnAction(e -> editRules());
+        MenuItem runRules = menuItem("menu.rules.apply");
+        runRules.setOnAction(e -> applyRules());
+        Menu rules = new Menu();
+        rules.textProperty().bind(I18n.binding("menu.rules"));
+        rules.getItems().addAll(editRules, runRules);
+
+        return new MenuBar(presetMenu, rules, tools, language, help);
     }
 
     private void toggleContextMenu(boolean install) {

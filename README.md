@@ -18,6 +18,8 @@ Folder Mania is a desktop app written in Java 21 with JavaFX. It generates a cus
 - **Batch editing**: add many folders at once (button, drag and drop, or command line) and optionally include all their subfolders. Hidden and system subfolders are skipped.
 - **Undo**: revert the last batch. A failed folder is rolled back, so you never end up with a half-applied change.
 - **Edit later**: the chosen style is stored in the folder itself, so selecting a customized folder loads its current color and icon back into the editor.
+- **Presets**: save the current style (colors, mode, icon and size) under a name from the **Presets** menu and load it back with one click. Presets are stored in `%APPDATA%\FolderMania\presets`.
+- **Automatic rules**: from the **Rules** menu, map patterns to presets, one per line (e.g. `.git = Code`, `node_modules = Grey`, `*.pdf = Documents`). A folder matches when its own name, or the name of anything directly inside it, matches the pattern; the first matching rule wins. *Apply rules to listed folders* styles every folder (and subfolders, if enabled) as a single undoable batch.
 - **Explorer integration**: optional "Customize with Folder Mania" entry in the folder context menu (per-user, no admin rights).
 - **Clean uninstall**: removes the context menu entry and the saved settings.
 

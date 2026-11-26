@@ -3,3 +3,7 @@ build/
 out/
 .idea/
 *.iml
+
+# Created when Folder Mania customizes the project folders
+desktop.ini
+.foldermania*

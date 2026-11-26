@@ -112,3 +112,8 @@ tasks.register<Exec>("packageInstaller") {
         )
     }
 }
+
+// Folder Mania may customize its own source folders: keep its files out of the build
+tasks.processResources {
+    exclude("**/desktop.ini", "**/.foldermania*")
+}

@@ -71,6 +71,14 @@ public final class FolderService {
         return runBatch(folders, folder -> apply(folder, fill, overlay, overlayScale));
     }
 
+    /** Applies a different style to each folder, as one undoable batch. */
+    public BatchResult applyStyles(Map<Path, StyleStore.Style> styles) {
+        return runBatch(new ArrayList<>(styles.keySet()), folder -> {
+            StyleStore.Style s = styles.get(folder);
+            apply(folder, s.fill(), s.overlay(), s.overlayScale());
+        });
+    }
+
     public BatchResult resetAll(List<Path> folders) {
         return runBatch(folders, FolderService::reset);
     }
