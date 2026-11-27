@@ -7,7 +7,15 @@ plugins {
 }
 
 group = "com.foldermania"
-version = "0.2.0"
+// Release builds take the version from the tag (v3.0 -> 3.0); local builds use the fallback
+version = System.getenv("GITHUB_REF_NAME")
+    ?.takeIf { System.getenv("GITHUB_REF_TYPE") == "tag" }
+    ?.removePrefix("v")
+    ?: "3.0"
+
+tasks.jar {
+    manifest { attributes("Implementation-Version" to project.version) }
+}
 
 repositories {
     mavenCentral()
